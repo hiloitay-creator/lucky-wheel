@@ -3,142 +3,252 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>גלגל המזל - לוח בקרה</title>
+    <title>Wheel of Names - Custom</title>
     <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f4f5f7;
             display: flex;
-            justify-content: center;
-            align-items: center;
             height: 100vh;
-            margin: 0;
-            background-color: #f0f2f5;
+            overflow: hidden;
         }
 
-        .container {
+        /* האפליקציה המרכזית - כמו האתר המקורי */
+        .main-app {
+            flex: 1;
             display: flex;
-            gap: 50px;
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: radial-gradient(circle, #ffffff 0%, #e4e7eb 100%);
         }
 
-        /* עיצוב הגלגל */
-        .wheel-container {
+        .wheel-wrapper {
             position: relative;
-            width: 400px;
-            height: 400px;
+            width: 550px;
+            height: 550px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         #canvas {
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            border: 5px solid #333;
-            transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+            border: 8px solid #ffffff;
+            transition: transform 6s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
-        .pointer {
+        /* החץ המקורי מצד ימין */
+        .pointer-right {
             position: absolute;
-            top: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 40px;
-            height: 40px;
-            background: red;
-            clip-path: polygon(50% 100%, 0 0, 100% 0);
+            right: -25px;
+            top: 50%;
+            transform: translateY(-50%) rotate(90deg);
+            width: 50px;
+            height: 50px;
+            background: #333;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            z-index: 20;
+            filter: drop-shadow(-3px 0px 5px rgba(0,0,0,0.3));
+        }
+
+        .center-circle {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            z-index: 15;
+            cursor: pointer;
+        }
+
+        /* לוח השמות המקורי מצד שמאל */
+        .names-sidebar {
+            width: 360px;
+            background: white;
+            border-right: 1px solid #e1e4e8;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.02);
             z-index: 10;
         }
 
-        /* לוח הבקרה */
-        .admin-panel {
-            width: 250px;
+        .sidebar-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 15px;
             display: flex;
-            flex-direction: column;
-            gap: 15px;
+            justify-content: space-between;
+            align-items: center;
         }
 
         textarea {
-            height: 150px;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
+            flex: 1;
+            width: 100%;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #cbd5e1;
+            font-size: 16px;
             resize: none;
+            outline: none;
+            transition: 0.2s;
         }
 
-        select, button {
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            cursor: pointer;
-            font-weight: bold;
-        }
+        textarea:focus { border-color: #3b82f6; }
 
-        button {
-            background-color: #28a745;
+        .spin-btn {
+            margin-top: 15px;
+            padding: 15px;
+            background: #2563eb;
             color: white;
             border: none;
-            transition: 0.3s;
-        }
-
-        button:hover {
-            background-color: #218838;
-        }
-
-        .winner-display {
-            margin-top: 20px;
-            font-size: 24px;
-            text-align: center;
-            color: #333;
+            border-radius: 10px;
+            font-size: 18px;
             font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(37,99,235,0.2);
+            transition: 0.2s;
+        }
+        .spin-btn:hover { background: #1d4ed8; transform: translateY(-1px); }
+
+        /* --- לוח הבקרה הסודי (אדמין) --- */
+        .admin-toggle {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: #e2e8f0;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #64748b;
+            z-index: 100;
+        }
+
+        .admin-panel {
+            position: absolute;
+            top: 55px;
+            left: 15px;
+            background: rgba(15, 23, 42, 0.95);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 260px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            display: none; /* חבוי בהתחלה */
+            z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+
+        .admin-panel h3 { margin-bottom: 10px; font-size: 16px; color: #38bdf8; }
+        .admin-panel select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            background: #334155;
+            color: white;
+            border: 1px solid #475569;
+            margin-top: 5px;
+            outline: none;
+        }
+
+        /* חלונית המנצח (פופ-אפ חגיגי) */
+        .popup-winner {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .popup-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            animation: scaleUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 400px; width: 90%;
+        }
+        @keyframes scaleUp { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .popup-content h2 { font-size: 22px; color: #64748b; margin-bottom: 10px; }
+        .popup-content h1 { font-size: 42px; color: #1e293b; margin-bottom: 25px; }
+        .popup-content button {
+            padding: 10px 25px; background: #10b981; color: white; border: none;
+            border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <!-- הגלגל -->
-    <div class="wheel-container">
-        <div class="pointer"></div>
-        <canvas id="canvas" width="500" height="500"></canvas>
-        <div id="winnerLabel" class="winner-display"></div>
+    <button class="admin-toggle" onclick="toggleAdmin()">⚙️ בקרה</button>
+    
+    <div class="admin-panel" id="adminPanel">
+        <h3>הגדרת תוצאה מראש</h3>
+        <label style="font-size: 13px;">בחר מי יצא בסיבוב הבא:</label>
+        <select id="forcedWinner">
+            <option value="">אקראי לחלוטין</option>
+        </select>
     </div>
 
-    <!-- לוח הבקרה -->
-    <div class="admin-panel">
-        <h3>לוח בקרה</h3>
-        <label>הכנס שמות (אחד בכל שורה):</label>
-        <textarea id="namesInput" oninput="updateWheel()">יוסי\nדנה\nאיתי\nשירה</textarea>
-        
-        <label>בחר מנצח מראש (אופציונלי):</label>
-        <select id="forcedWinner">
-            <option value="">אקראי לגמרי</option>
-        </select>
-        
-        <button onclick="spinWheel()">סובב את הגלגל!</button>
+    <div class="names-sidebar">
+        <div class="sidebar-title">
+            <span>שמות</span>
+        </div>
+        <textarea id="namesInput" oninput="updateWheel()" placeholder="הכנס שמות, אחד בכל שורה...">יוסי&#10;דנה&#10;איתי&#10;שירה&#10;רוני&#10;גל</textarea>
+        <button class="spin-btn" onclick="spinWheel()">סובב!</button>
     </div>
-</div>
+
+    <div class="main-app">
+        <div class="wheel-wrapper">
+            <div class="pointer-right"></div>
+            <div class="center-circle" onclick="spinWheel()"></div>
+            <canvas id="canvas" width="600" height="600"></canvas>
+        </div>
+    </div>
+
+    <div class="popup-winner" id="winnerPopup">
+        <div class="popup-content">
+            <h2>יש לנו מנצח!</h2>
+            <h1 id="winnerName"></h1>
+            <button onclick="closePopup()">סגור</button>
+        </div>
+    </div>
 
 <script>
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const namesInput = document.getElementById('namesInput');
     const forcedWinnerSelect = document.getElementById('forcedWinner');
-    const winnerLabel = document.getElementById('winnerLabel');
+    const winnerPopup = document.getElementById('winnerPopup');
+    const winnerName = document.getElementById('winnerName');
+    const adminPanel = document.getElementById('adminPanel');
 
     let names = [];
     let currentRotation = 0;
+    let isSpinning = false;
+
+    // צבעים קבועים ונעימים לעין בסגנון Wheel of Names
+    const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e'];
 
     function updateWheel() {
-        names = namesInput.value.split('\n').filter(name => name.trim() !== "");
+        names = namesInput.value.split('\n').map(n => n.trim()).filter(n => n !== "");
         drawWheel();
-        updateSelect();
+        updateAdminSelect();
     }
 
-    function updateSelect() {
+    function updateAdminSelect() {
         const currentSelection = forcedWinnerSelect.value;
-        forcedWinnerSelect.innerHTML = '<option value="">אקראי לגמרי</option>';
+        forcedWinnerSelect.innerHTML = '<option value="">אקראי לחלוטין</option>';
         names.forEach(name => {
             const option = document.createElement('option');
             option.value = name;
@@ -150,61 +260,78 @@
 
     function drawWheel() {
         const size = names.length;
+        if (size === 0) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            return;
+        }
         const sliceAngle = (2 * Math.PI) / size;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         names.forEach((name, i) => {
             const angle = i * sliceAngle;
             
-            // צבעים מתחלפים
-            ctx.fillStyle = `hsl(${(i * 360) / size}, 70%, 60%)`;
-            
+            ctx.fillStyle = colors[i % colors.length];
             ctx.beginPath();
-            ctx.moveTo(250, 250);
-            ctx.arc(250, 250, 250, angle, angle + sliceAngle);
+            ctx.moveTo(300, 300);
+            ctx.arc(300, 300, 295, angle, angle + sliceAngle);
             ctx.fill();
+
+            // קו הפרדה לבן ונקי
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
             ctx.stroke();
 
-            // כתיבת הטקסט
+            // טקסט השמות
             ctx.save();
-            ctx.translate(250, 250);
+            ctx.translate(300, 300);
             ctx.rotate(angle + sliceAngle / 2);
             ctx.textAlign = "right";
-            ctx.fillStyle = "white";
-            ctx.font = "bold 20px Arial";
-            ctx.fillText(name, 230, 10);
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 18px sans-serif";
+            ctx.fillText(name, 270, 6);
             ctx.restore();
         });
     }
 
     function spinWheel() {
-        if (names.length === 0) return;
+        if (names.length === 0 || isSpinning) return;
+        isSpinning = true;
 
-        winnerLabel.textContent = "";
         const forcedWinner = forcedWinnerSelect.value;
         let winnerIndex;
 
-        if (forcedWinner !== "") {
+        if (forcedWinner !== "" && names.includes(forcedWinner)) {
             winnerIndex = names.indexOf(forcedWinner);
         } else {
             winnerIndex = Math.floor(Math.random() * names.length);
         }
 
         const sliceAngle = 360 / names.length;
-        // חישוב הזווית כדי שהחץ (למעלה) יצביע על הפלח הנכון
-        // הגלגל מסתובב בכיוון השעון, לכן החישוב מתבצע הפוך
-        const extraSpins = 5 * 360; // 5 סיבובים מלאים לאפקט
-        const targetAngle = extraSpins + (270 - (winnerIndex * sliceAngle) - (sliceAngle / 2));
+        const extraSpins = 8 * 360; // 8 סיבובים שלמים בשביל המתח
+
+        // חישוב המעלה המדויקת כדי שהחץ הימני (0 מעלות ב-CSS) ייעצר על המנצח
+        const targetAngle = extraSpins + (360 - (winnerIndex * sliceAngle) - (sliceAngle / 2));
 
         currentRotation += targetAngle;
         canvas.style.transform = `rotate(${currentRotation}deg)`;
 
+        // החלון הקופץ מופיע בדיוק בסיום הסיבוב (6 שניות)
         setTimeout(() => {
-            winnerLabel.textContent = "המנצח: " + names[winnerIndex];
-        }, 5000);
+            winnerName.textContent = names[winnerIndex];
+            winnerPopup.style.display = 'flex';
+            isSpinning = false;
+        }, 6000);
     }
 
-    // אתחול ראשוני
+    function toggleAdmin() {
+        adminPanel.style.display = adminPanel.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function closePopup() {
+        winnerPopup.style.display = 'none';
+    }
+
+    // אתחול
     updateWheel();
 </script>
 
