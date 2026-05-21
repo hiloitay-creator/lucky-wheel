@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>גלגל המזל - לוח בקרה</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+        }
+
+        .container {
+            display: flex;
+            gap: 50px;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        /* עיצוב הגלגל */
+        .wheel-container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 5px solid #333;
+            transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1);
+        }
+
+        .pointer {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 40px;
+            background: red;
+            clip-path: polygon(50% 100%, 0 0, 100% 0);
+            z-index: 10;
+        }
+
+        /* לוח הבקרה */
+        .admin-panel {
+            width: 250px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        textarea {
+            height: 150px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            resize: none;
+        }
+
+        select, button {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        .winner-display {
+            margin-top: 20px;
+            font-size: 24px;
+            text-align: center;
+            color: #333;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- הגלגל -->
+    <div class="wheel-container">
+        <div class="pointer"></div>
+        <canvas id="canvas" width="500" height="500"></canvas>
+        <div id="winnerLabel" class="winner-display"></div>
+    </div>
+
+    <!-- לוח הבקרה -->
+    <div class="admin-panel">
+        <h3>לוח בקרה</h3>
+        <label>הכנס שמות (אחד בכל שורה):</label>
+        <textarea id="namesInput" oninput="updateWheel()">יוסי\nדנה\nאיתי\nשירה</textarea>
+        
+        <label>בחר מנצח מראש (אופציונלי):</label>
+        <select id="forcedWinner">
+            <option value="">אקראי לגמרי</option>
+        </select>
+        
+        <button onclick="spinWheel()">סובב את הגלגל!</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const namesInput = document.getElementById('namesInput');
+    const forcedWinnerSelect = document.getElementById('forcedWinner');
+    const winnerLabel = document.getElementById('winnerLabel');
+
+    let names = [];
+    let currentRotation = 0;
+
+    function updateWheel() {
+        names = namesInput.value.split('\n').filter(name => name.trim() !== "");
+        drawWheel();
+        updateSelect();
+    }
+
+    function updateSelect() {
+        const currentSelection = forcedWinnerSelect.value;
+        forcedWinnerSelect.innerHTML = '<option value="">אקראי לגמרי</option>';
+        names.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            if (name === currentSelection) option.selected = true;
+            forcedWinnerSelect.appendChild(option);
+        });
+    }
+
+    function drawWheel() {
+        const size = names.length;
+        const sliceAngle = (2 * Math.PI) / size;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        names.forEach((name, i) => {
+            const angle = i * sliceAngle;
+            
+            // צבעים מתחלפים
+            ctx.fillStyle = `hsl(${(i * 360) / size}, 70%, 60%)`;
+            
+            ctx.beginPath();
+            ctx.moveTo(250, 250);
+            ctx.arc(250, 250, 250, angle, angle + sliceAngle);
+            ctx.fill();
+            ctx.stroke();
+
+            // כתיבת הטקסט
+            ctx.save();
+            ctx.translate(250, 250);
+            ctx.rotate(angle + sliceAngle / 2);
+            ctx.textAlign = "right";
+            ctx.fillStyle = "white";
+            ctx.font = "bold 20px Arial";
+            ctx.fillText(name, 230, 10);
+            ctx.restore();
+        });
+    }
+
+    function spinWheel() {
+        if (names.length === 0) return;
+
+        winnerLabel.textContent = "";
+        const forcedWinner = forcedWinnerSelect.value;
+        let winnerIndex;
+
+        if (forcedWinner !== "") {
+            winnerIndex = names.indexOf(forcedWinner);
+        } else {
+            winnerIndex = Math.floor(Math.random() * names.length);
+        }
+
+        const sliceAngle = 360 / names.length;
+        // חישוב הזווית כדי שהחץ (למעלה) יצביע על הפלח הנכון
+        // הגלגל מסתובב בכיוון השעון, לכן החישוב מתבצע הפוך
+        const extraSpins = 5 * 360; // 5 סיבובים מלאים לאפקט
+        const targetAngle = extraSpins + (270 - (winnerIndex * sliceAngle) - (sliceAngle / 2));
+
+        currentRotation += targetAngle;
+        canvas.style.transform = `rotate(${currentRotation}deg)`;
+
+        setTimeout(() => {
+            winnerLabel.textContent = "המנצח: " + names[winnerIndex];
+        }, 5000);
+    }
+
+    // אתחול ראשוני
+    updateWheel();
+</script>
+
+</body>
+</html>
